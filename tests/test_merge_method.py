@@ -25,7 +25,7 @@ def base_row(**overrides):
         "agency": None,
         "location": None,
         "simplified_lithology": None,
-        "ID": "row-id-1",
+        "ID": "5133cfd0-3684-5785-ad1c-47383cca3521",
     }
     row.update(overrides)
     return row
@@ -34,7 +34,7 @@ def base_row(**overrides):
 class TestMasks:
     # test Mask helper functions
     def test_value_empty_mask(self):
-        df = pd.DataFrame([base_row(), base_row(value=1.0, ID="row-id-2")])
+        df = pd.DataFrame([base_row(), base_row(value=1.0, ID="95fa1828-6701-5022-970e-b30b43ba898c")])
         mask = mm.value_empty_mask(df)
         assert list(mask) == [True, False]
 
@@ -73,8 +73,8 @@ class TestMergePropertyValue:
     def test_multiple_rows_are_merged_into_one(self):
         df = pd.DataFrame(
             [
-                base_row(value=1.0, value_min=0.5, value_max=1.5, value_std=0.1, ID="row-1"),
-                base_row(value=1.2, value_min=0.6, value_max=1.8, value_std=0.15, ID="row-2"),
+                base_row(value=1.0, value_min=0.5, value_max=1.5, value_std=0.1, ID="5133cfd0-3684-5785-ad1c-47383cca3521"),
+                base_row(value=1.2, value_min=0.6, value_max=1.8, value_std=0.15, ID="95fa1828-6701-5022-970e-b30b43ba898c"),
             ],
         )
         result = mm.merge_property_value(df, sample_size=1000, source_type="merged")
@@ -85,8 +85,8 @@ class TestMergePropertyValue:
     def test_identical_values_produce_zero_std(self):
         df = pd.DataFrame(
             [
-                base_row(value=0.0, value_std=0.0, ID="row-1"),
-                base_row(value=0.0, value_std=0.0, ID="row-2"),
+                base_row(value=0.0, value_std=0.0, ID="5133cfd0-3684-5785-ad1c-47383cca3521"),
+                base_row(value=0.0, value_std=0.0, ID="95fa1828-6701-5022-970e-b30b43ba898c"),
             ],
         )
         result = mm.merge_property_value(df, sample_size=1000, source_type="merged")
@@ -98,8 +98,8 @@ class TestMergePropertyValue:
     def test_custom_sampling_function_is_used(self):
         df = pd.DataFrame(
             [
-                base_row(value=1.0, value_min=0.5, value_max=1.5, value_std=0.1, ID="row-1"),
-                base_row(value=1.2, value_min=0.6, value_max=1.8, value_std=0.15, ID="row-2"),
+                base_row(value=1.0, value_min=0.5, value_max=1.5, value_std=0.1, ID="5133cfd0-3684-5785-ad1c-47383cca3521"),
+                base_row(value=1.2, value_min=0.6, value_max=1.8, value_std=0.15, ID="95fa1828-6701-5022-970e-b30b43ba898c"),
             ],
         )
         result = mm.merge_property_value(
@@ -113,8 +113,8 @@ class TestMergePropertyValue:
     def test_nonscalar_rows_kept_for_merged_source(self):
         df = pd.DataFrame(
             [
-                base_row(type="expression", value="x+1", ID="row-1"),
-                base_row(sampled_data="np.array([1.0, 2.0])", ID="row-2"),
+                base_row(type="expression", value="x+1", ID="5133cfd0-3684-5785-ad1c-47383cca3521"),
+                base_row(sampled_data="np.array([1.0, 2.0])", ID="95fa1828-6701-5022-970e-b30b43ba898c"),
             ],
         )
         result = mm.merge_property_value(df, source_type="merged")
@@ -123,8 +123,8 @@ class TestMergePropertyValue:
     def test_nonscalar_rows_dropped_for_default_source(self):
         df = pd.DataFrame(
             [
-                base_row(type="expression", value="x+1", ID="row-1"),
-                base_row(sampled_data="np.array([1.0, 2.0])", ID="row-2"),
+                base_row(type="expression", value="x+1", ID="5133cfd0-3684-5785-ad1c-47383cca3521"),
+                base_row(sampled_data="np.array([1.0, 2.0])", ID="95fa1828-6701-5022-970e-b30b43ba898c"),
             ],
         )
         result = mm.merge_property_value(df, source_type="default")
@@ -132,7 +132,7 @@ class TestMergePropertyValue:
 
     def test_empty_columns_dropped_except_required(self):
         df = pd.DataFrame(
-            [base_row(sampled_data="np.array([1.0, 2.0, 3.0])", ID="row-1")],
+            [base_row(sampled_data="np.array([1.0, 2.0, 3.0])", ID="5133cfd0-3684-5785-ad1c-47383cca3521")],
         )
         result = mm.merge_property_value(df, source_type="merged")
         assert "agency" not in result.columns

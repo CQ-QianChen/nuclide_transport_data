@@ -1,6 +1,7 @@
 import uuid
 import numpy as np
 import pandas as pd
+from uuid import UUID
 from scipy import stats
 from scipy.stats import beta
 from scipy.stats import lognorm
@@ -675,7 +676,7 @@ def merge_property_value(input_property, sample_size=1000000, source_type="merge
 
             # Get meta information
             ids_list = list(input_nuclide_group["ID"])
-            ids_combined = ",".join(ids_list)
+            ids_combined = ",".join(sorted(ids_list, key=UUID))
             print_before_id = "combined datasets with ids:" if len(ids_list) > 1 else "dataset with id:"
 
             number_of_datasets = input_nuclide_group.shape[0]
