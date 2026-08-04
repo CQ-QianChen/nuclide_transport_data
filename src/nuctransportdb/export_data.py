@@ -32,40 +32,12 @@ def export_species_data(input_config) -> None:
     all_species_type_data = load_all_species_type_data()
     nuclides_list = input_config["nuclide_to_consider"]
 
-
-    slow_categories = ["alkaline_earth_metal","transition_metal","lanthanide","actinide"]
-    fast_element = ["Cl", "Br", "I", "K", "Cs", "Ag", "H"]
-
-    species_type = {}
-    diffusion_group = {}
-    for nuclide in nuclides_list:
-        info = all_species_type_data.get(nuclide)
-        if info is None:
-            species_type[nuclide] = {"value": None}
-            diffusion_group[nuclide] = {"value": "fast"}
-            continue
-
-        species_type[nuclide] = {"value": info.get("species_type")}
-
-        category = (info.get("element_category") or "").lower()
-
-        element = nuclide.partition("-")[0]
-
-        if category in slow_categories:
-            diffusion_group[nuclide] = {"value": "slow"}
-        elif element in fast_element:
-            diffusion_group[nuclide] = {"value": "fast"}
-        else: # Unclassified nuclided treated as fast per your rule
-            diffusion_group[nuclide] = {"value": "fast"}
+    selected_species_type_data = {nuclide: all_species_type_data[nuclide] for nuclide in nuclides_list}
 
     path_to_save_nuclide_species_data = input_config["path_to_save_nuclide_species_data"]
 
-
     with open(os.path.join(path_to_save_nuclide_species_data, "species_type.yaml"), "w") as f:
-        yaml.safe_dump(species_type, f, sort_keys=False)
-
-    with open(os.path.join(path_to_save_nuclide_species_data, "diffusion_group.yaml"), "w") as f:
-        yaml.safe_dump(diffusion_group, f, sort_keys=False)
+        yaml.safe_dump(selected_species_type_data, f, sort_keys=False)
 
 def export_nuclide_emitted_energy(input_config) -> None:
     all_emitted_energy = load_all_emitted_energy()

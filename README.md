@@ -73,7 +73,7 @@ nuclide_to_consider:
 python -m nuctransportdb.export_data --config  \
     --path_to_site_yaml_file input/DE_South_Claystone_Germany/site_data/DE_South_Claystone.yaml \
     --path_to_save_sorption_data output/DE_South_Claystone_Germany/sorption_data \
-    --path_to_save_nuclide_species_data output/DE_South_Claystone_Germany/nuclide_data \
+    --path_to_save_nuclide_species_data output/DE_South_Claystone_Germany/species_data \
     --path_to_save_nuclide_emitted_energy_data output/DE_South_Claystone_Germany/emitted_energy_data \
 ```
 
