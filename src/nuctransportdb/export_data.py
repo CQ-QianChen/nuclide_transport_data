@@ -6,12 +6,22 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
+import scipy
+from scipy import stats
+from scipy.stats import lognorm
+from scipy.stats import norm
 from nuctransportdb.add_default import add_default_df
 from nuctransportdb.data_tagging import filter_tagged_data
 from nuctransportdb.dataframe2yaml import convert_to_flow_sequence
 from nuctransportdb.dataframe2yaml import export2yaml
 from nuctransportdb.merge_method import merge_property_value
 from nuctransportdb.property2dataframe import load_nuclide_sorption_data
+
+from nuctransportdb.merge_method import generate_lognorm, format_number_adaptive
+from nuctransportdb.generate_id import get_entry_str
+from nuctransportdb.generate_id import ntd_namespace
+from uuid import UUID
+import uuid
 
 
 def load_all_emitted_energy():
@@ -27,8 +37,20 @@ def load_all_species_type_data():
     with open(path_to_yaml, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
+def load_diffusivity_data(diffusion_group):
+    # load diffusivity data
+    data_path = files("nuctransportdb") / "dataset" / "diffusivity_in_water"
+    with open(os.path.join(data_path, f"{diffusion_group}.yaml"), encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
-def export_species_data(input_config) -> None:
+
+def export_species_diffusivity_data(input_config) -> None:
+
+    with open(input_config["path_to_site_yaml"], encoding="utf-8") as f:
+            yaml_config = yaml.safe_load(f)
+    yaml_config.pop("name", None)
+    yaml_config.pop("description", None)
+
     all_species_type_data = load_all_species_type_data()
     nuclides_list = input_config["nuclide_to_consider"]
 
@@ -38,6 +60,54 @@ def export_species_data(input_config) -> None:
 
     with open(os.path.join(path_to_save_nuclide_species_data, "species_type.yaml"), "w") as f:
         yaml.safe_dump(selected_species_type_data, f, sort_keys=False)
+
+    slow_categories = ["alkaline_earth_metal","transition_metal","lanthanide","actinide"]
+    fast_element = ["Cl", "Br", "I", "K", "Cs", "Ag", "H"]
+
+    results = {}
+    for nuclide in nuclides_list:
+        info = all_species_type_data.get(nuclide)
+        if info is None:
+            results[nuclide] = load_diffusivity_data(diffusion_group="high_diffusivity")['diffusion_coefficient']
+            continue
+
+        category = (info.get("element_category") or "").lower()
+
+        element = nuclide.partition("-")[0]
+
+        if category in slow_categories:
+            results[nuclide] = load_diffusivity_data(diffusion_group="low_diffusivity")['diffusion_coefficient']
+        elif element in fast_element:
+            results[nuclide] = load_diffusivity_data(diffusion_group="high_diffusivity")['diffusion_coefficient']
+        else: # Unclassified nuclided treated as fast per your rule
+            results[nuclide] = load_diffusivity_data(diffusion_group="high_diffusivity")['diffusion_coefficient']
+
+        lognorm_dist = generate_lognorm(value=results[nuclide][0]['value'], value_std=results[nuclide][0]['value_std'], value_min=0, as_string=True)
+        samples_string = lognorm_dist + '.rvs(size=1000000, random_state=21)'
+        samples = eval(samples_string)
+
+        results[nuclide][0]['value'] = format_number_adaptive(np.mean(samples))
+        results[nuclide][0]['value_min'] = format_number_adaptive(np.min(samples))
+        results[nuclide][0]['value_max'] = format_number_adaptive(np.max(samples))
+        results[nuclide][0]['value_std'] = format_number_adaptive(np.std(samples))
+        results[nuclide][0]['unit_base'] = convert_to_flow_sequence(results[nuclide][0]['unit_base'])
+        results[nuclide][0]['source'] = 'merged'
+        results[nuclide][0]['probability_distribution']['sampled_data'] = samples_string
+        results[nuclide][0]['description'] = f"A lognormal distribution fitted from 1 dataset with id: {results[nuclide][0]['tag']['ID']}."
+        results[nuclide][0]['tag'] = {'ID': None}
+
+        keys_to_remove = ['variable_name', 'variable_unit_str', 'variable_unit_base']
+        for key in keys_to_remove:
+            results[nuclide][0].pop(key, None)
+            
+        NTD_NAMESPACE = ntd_namespace()
+        results[nuclide][0]['tag']["ID"] = str(uuid.uuid5(NTD_NAMESPACE, get_entry_str(results[nuclide][0], nuclide_name=nuclide)))
+
+
+    path_to_save_nuclide_water_diffusivity_data = input_config["path_to_save_nuclide_water_diffusivity_data"]
+    for rock_unit in yaml_config.keys():
+        with open(os.path.join(path_to_save_nuclide_water_diffusivity_data, f"{rock_unit}.yaml"), "w") as f:
+            yaml.safe_dump(results, f, sort_keys=False)
 
 def export_nuclide_emitted_energy(input_config) -> None:
     all_emitted_energy = load_all_emitted_energy()
@@ -143,16 +213,24 @@ def parse_args():
         required=True,
         help="Output directory for sorption coefficient data.",
     )
+
     parser.add_argument(
         "--path_to_save_nuclide_species_data",
         type=str,
         required=True,
         help="Output directory for nuclide species data.",
     )
+
+    parser.add_argument(
+        "--path_to_save_nuclide_water_diffusivity_data",
+        type=str,
+        required=True,
+        help="Output directory for nuclide diffusivity data.",
+    )
     parser.add_argument(
         "--path_to_save_nuclide_emitted_energy_data",
         type=str,
-        required=True,
+        required=False,
         help="Output directory for emitted energy data.",
     )
 
@@ -199,7 +277,7 @@ def validate_config(config) -> None:
         msg = f"Missing required config field(s): {missing}"
         raise ValueError(msg)
 
-def build_nuclide_config(config_path, path_to_site_yaml, path_to_save_sorption_data, path_to_save_nuclide_species_data, path_to_save_nuclide_emitted_energy_data):
+def build_nuclide_config(config_path, path_to_site_yaml, path_to_save_sorption_data, path_to_save_nuclide_species_data, path_to_save_nuclide_water_diffusivity_data, path_to_save_nuclide_emitted_energy_data):
     """Load and validate, a site configuration file. Save rock, site, geometry data with output paths given via CLI.
 
     Args:
@@ -207,6 +285,7 @@ def build_nuclide_config(config_path, path_to_site_yaml, path_to_save_sorption_d
         path_to_site_yaml (str): Path to a site YAML file.
         path_to_save_sorption_data (str): Output directory for sorption coefficient data.
         path_to_save_nuclide_species_data (str): Output directory for nuclide species data.
+        path_to_save_nuclide_water_diffusivity_data (str): Output directory for nuclide diffusivity data.
         path_to_save_nuclide_emitted_energy_data (str): Output directory for emitted energy data.
 
     Returns:
@@ -220,6 +299,7 @@ def build_nuclide_config(config_path, path_to_site_yaml, path_to_save_sorption_d
         "path_to_site_yaml": path_to_site_yaml,
         "path_to_save_sorption_data": path_to_save_sorption_data,
         "path_to_save_nuclide_species_data": path_to_save_nuclide_species_data,
+        "path_to_save_nuclide_water_diffusivity_data": path_to_save_nuclide_water_diffusivity_data,
         "path_to_save_nuclide_emitted_energy_data": path_to_save_nuclide_emitted_energy_data,
     }
 
@@ -233,17 +313,21 @@ def main() -> None:
             args.path_to_site_yaml_file,
             args.path_to_save_sorption_data,
             args.path_to_save_nuclide_species_data,
+            args.path_to_save_nuclide_water_diffusivity_data,
             args.path_to_save_nuclide_emitted_energy_data,
         )
     except (FileNotFoundError, ValueError):
         sys.exit(1)
 
-    for path_key in ["path_to_save_sorption_data", "path_to_save_nuclide_species_data", "path_to_save_nuclide_emitted_energy_data"]:
+    for path_key in ["path_to_save_sorption_data", "path_to_save_nuclide_water_diffusivity_data", "path_to_save_nuclide_species_data"]:
         Path(nuclide_config[path_key]).mkdir(parents=True, exist_ok=True)
 
-    export_species_data(nuclide_config)
-    export_nuclide_emitted_energy(nuclide_config)
+    export_species_diffusivity_data(nuclide_config)
     export_sorption_data_for_site(nuclide_config)
+
+    if args.path_to_save_nuclide_emitted_energy_data is not None:
+        Path(nuclide_config["path_to_save_nuclide_emitted_energy_data"]).mkdir(parents=True, exist_ok=True)
+        export_nuclide_emitted_energy(nuclide_config)
 
 if __name__ == "__main__":
     main()

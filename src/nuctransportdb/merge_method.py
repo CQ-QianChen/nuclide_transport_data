@@ -2,6 +2,7 @@ import uuid
 import numpy as np
 import pandas as pd
 from uuid import UUID
+import scipy
 from scipy import stats
 from scipy.stats import beta
 from scipy.stats import lognorm

@@ -4,7 +4,7 @@
 
 
 
-A simulation-ready database for radionuclide transport simulations, providing emitted energy data for a selected set of nuclides, sorption coefficient cross rock types, and chemical-species data.
+A simulation-ready database for radionuclide transport simulations, providing emitted energy data and diffusion coefficients under the condition of pure water at a reference temperature of 25 Celsius degree for a selected set of nuclides, sorption coefficient cross rock types, and chemical-species data.
 
 ## Installation
 
@@ -22,8 +22,8 @@ Use [export_data.py](./src/nuctransportdb/export_data.py) to extract nuclide dat
 
 ### Configuration file format 
 
-| Field                 | Description |
-|-----------------------|---|
+| Field                 | Description                                  |
+|-----------------------|----------------------------------------------|
 | `nuclide_to_consider` | List of nuclides to extract (e.g., `I-129`). |
 
 Users have to define an input path for a site YAML file. 
@@ -44,11 +44,12 @@ Rock_Unit_2:
 In addition, users must provide output paths for different data types.
 
 
-| Path                                       | Description |
-|--------------------------------------------|---|
-| `path_to_save_sorption_data`               | Output directory for sorption coefficient data. | 
-| `path_to_save_nuclide_species_data`        | Output directory for nuclide species data. | 
-| `path_to_save_nuclide_emitted_energy_data` | Output directory for emitted energy data. |
+| Path                                          | Description                                     |
+|-----------------------------------------------|-------------------------------------------------|
+| `path_to_save_sorption_data`                  | Output directory for sorption coefficient data. |
+| `path_to_save_nuclide_species_data`           | Output directory for nuclide species data.      |
+| `path_to_save_nuclide_water_diffusivity_data` | Output directory for nuclide diffusivity data.  |
+| `path_to_save_nuclide_emitted_energy_data`    | Output directory for emitted energy data.       |
 
 ### Usage:
 
@@ -57,6 +58,7 @@ python nuctransportdb.export_data --config path/to/nuclide_config.yaml \
     --path_to_site_yaml_file path/to/site/yaml/file \
     --path_to_save_sorption_data output/path/to/sorption_data \
     --path_to_save_nuclide_species_data output/path/to/nuclide_species_data \
+    --path_to_save_nuclide_water_diffusivity_data output/path/to/nuclide_water_diffusivity_data \
     --path_to_save_nuclide_emitted_energy_data output/path/to/emitted_energy_data \
 ```
 
@@ -73,7 +75,8 @@ nuclide_to_consider:
 python -m nuctransportdb.export_data --config  \
     --path_to_site_yaml_file input/DE_South_Claystone_Germany/site_data/DE_South_Claystone.yaml \
     --path_to_save_sorption_data output/DE_South_Claystone_Germany/sorption_data \
-    --path_to_save_nuclide_species_data output/DE_South_Claystone_Germany/species_data \
+    --path_to_save_nuclide_species_data output/DE_South_Claystone_Germany/nuclide_species_data \
+    --path_to_save_nuclide_water_diffusivity_data output/DE_South_Claystone_Germany/nuclide_water_diffusivity_data \
     --path_to_save_nuclide_emitted_energy_data output/DE_South_Claystone_Germany/emitted_energy_data \
 ```
 

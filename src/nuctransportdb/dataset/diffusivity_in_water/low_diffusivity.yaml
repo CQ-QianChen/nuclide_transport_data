@@ -1,0 +1,23 @@
+diffusion_coefficient:
+- source: li1974
+  type: scalar
+  value: 7.5e-10
+  value_min: null
+  value_max: null
+  value_std: 2.5e-10
+  probability_distribution:
+    sample_size: 1000000
+    sampled_data: scipy.stats.norm(loc=7.5e-10, scale=2.5e-10).rvs(size=1000000,
+      random_state=21)
+  unit_str: m^2/s
+  unit_base: [0, 2, -1, 0, 0, 0, 0]
+  variable_name: null
+  variable_unit_str: null
+  variable_unit_base: null
+  description: Diffusion coefficient for alkaline earth metals, transition 
+    metals, lanthanides, and actinides in pure water at 25 Celsius degree.
+  tag:
+    agency: null
+    location: null
+    simplified_lithology: null
+    ID: 3ca48462-4ab7-53a6-b031-e4ba73b37a5d
